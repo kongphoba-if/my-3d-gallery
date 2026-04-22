@@ -1,0 +1,8 @@
+{
+  "name": "AR Model Visualizer",
+  "description": "A single-page mobile-responsive 3D model visualizer using <model-viewer> with AR support.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
