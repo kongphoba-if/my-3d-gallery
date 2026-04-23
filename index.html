@@ -2,55 +2,76 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>3D Model Visualizer</title>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        :root { color-scheme: light; }
-        body { margin: 0; font-family: sans-serif; background: #ffffff; overflow: hidden; }
-        model-viewer { width: 100vw; height: 100vh; background-color: #ffffff; --poster-color: #ffffff; }
+        /* Force white background even in system dark mode */
+        :root { color-scheme: light; } 
 
-        /* Navigation Container */
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #ffffff !important; 
+            overflow: hidden; 
+        }
+
+        model-viewer { 
+            width: 100vw; 
+            height: 100vh; 
+            background-color: #ffffff; 
+            --poster-color: #ffffff;
+        }
+
+        /* The Navigation Bar - Positioned high to clear mobile UI */
         .nav-container {
             position: absolute;
-            bottom: 30px;
+            bottom: 90px; /* Moved up significantly for mobile button clearance */
+            margin-bottom: env(safe-area-inset-bottom); /* Extra space for iPhone home bars */
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.8);
+            gap: 15px;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
             padding: 10px 20px;
-            border-radius: 40px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: fit-content;
+            white-space: nowrap;
         }
 
         .nav-btn {
             background: none;
             border: none;
             color: #FF6B00; /* Your orange color */
-            font-size: 32px;
+            font-size: 30px;
             font-weight: bold;
             cursor: pointer;
-            padding: 0 10px;
-            transition: transform 0.2s;
+            padding: 10px 15px; /* Larger hit area for thumbs */
+            line-height: 1;
+            transition: transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .nav-btn:active { transform: scale(0.9); }
 
         .model-name {
             color: #FF6B00;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
-            min-width: 120px;
+            min-width: 110px;
             text-align: center;
             letter-spacing: 1px;
+            user-select: none;
         }
 
-        /* Hide Vercel Toolbar */
-        #vercel-live-feedback, .vercel-toolbar { display: none !important; }
+        /* Hide Vercel Toolbar & Feedback buttons */
+        #vercel-live-feedback, .vercel-toolbar, [class*="vercel"] { 
+            display: none !important; 
+        }
     </style>
 </head>
 <body>
@@ -59,13 +80,16 @@
         src="1.glb" 
         ar ar-modes="webxr scene-viewer quick-look" 
         camera-controls 
-        shadow-intensity="1" 
+        shadow-intensity="1.5" 
+        shadow-softness="0.5"
+        exposure="1.2"
+        environment-image="neutral"
         auto-rotate>
         
         <div class="nav-container">
-            <button class="nav-btn" onclick="prevModel()">◀</button>
+            <button class="nav-btn" onclick="prevModel()" aria-label="Previous Model">◀</button>
             <div id="displayName" class="model-name">STR-A</div>
-            <button class="nav-btn" onclick="nextModel()">▶</button>
+            <button class="nav-btn" onclick="nextModel()" aria-label="Next Model">▶</button>
         </div>
     </model-viewer>
 
@@ -73,8 +97,7 @@
         const viewer = document.getElementById('viewer');
         const nameDisplay = document.getElementById('displayName');
         
-        // 1. Define your Names here! 
-        // Index 1 matches 1.glb, Index 2 matches 2.glb, etc.
+        // Model Name Mapping
         const modelNames = {
             1: "STR-A",
             2: "STR-B",
@@ -92,30 +115,34 @@
         const totalModels = 11;
         let currentId = 1;
 
-        // 2. Logic to update the viewer
         function updateUI(id) {
             currentId = parseInt(id);
+            // Safety check: if URL has an invalid ID, default to 1
+            if (isNaN(currentId) || currentId < 1 || currentId > totalModels) {
+                currentId = 1;
+            }
+            
             viewer.src = currentId + '.glb';
             nameDisplay.innerHTML = modelNames[currentId] || "Model " + currentId;
             
-            // This updates the URL bar without reloading the page
+            // Updates the URL bar without reloading the page
             const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?model=' + currentId;
             window.history.pushState({path:newUrl},'',newUrl);
         }
 
         function nextModel() {
             let next = currentId + 1;
-            if (next > totalModels) next = 1; // Loop back to start
+            if (next > totalModels) next = 1;
             updateUI(next);
         }
 
         function prevModel() {
             let prev = currentId - 1;
-            if (prev < 1) prev = totalModels; // Loop to end
+            if (prev < 1) prev = totalModels;
             updateUI(prev);
         }
 
-        // 3. Initial Load logic (checking the URL ?model=X)
+        // Handle initial load from URL (?model=X)
         const urlParams = new URLSearchParams(window.location.search);
         const startId = urlParams.get('model') || 1;
         updateUI(startId);
