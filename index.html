@@ -3,17 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Model Viewer</title>
+    <title>3D Model Visualizer</title>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #f0f0f0; overflow: hidden; }
-        model-viewer { width: 100vw; height: 100vh; --poster-color: transparent; }
-        .controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: rgba(255,255,255,0.8); padding: 10px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        select { padding: 5px 15px; border-radius: 15px; border: 1px solid #ccc; font-size: 16px; }
-        /* This hides any injected toolbars that might try to pop up */
-        #vercel-live-feedback, .vercel-toolbar { 
-            display: none !important; 
+        :root { color-scheme: light; }
+        body { margin: 0; font-family: sans-serif; background: #ffffff; overflow: hidden; }
+        model-viewer { width: 100vw; height: 100vh; background-color: #ffffff; --poster-color: #ffffff; }
+
+        /* Navigation Container */
+        .nav-container {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #FF6B00; /* Your orange color */
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 10px;
+            transition: transform 0.2s;
+        }
+
+        .nav-btn:active { transform: scale(0.9); }
+
+        .model-name {
+            color: #FF6B00;
+            font-size: 24px;
+            font-weight: 800;
+            min-width: 120px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* Hide Vercel Toolbar */
+        #vercel-live-feedback, .vercel-toolbar { display: none !important; }
     </style>
 </head>
 <body>
@@ -21,47 +58,68 @@
     <model-viewer id="viewer" 
         src="1.glb" 
         ar ar-modes="webxr scene-viewer quick-look" 
-        camera-controls poster="poster.webp" 
-        shadow-intensity="1" auto-rotate>
+        camera-controls 
+        shadow-intensity="1" 
+        auto-rotate>
         
-        <div class="controls">
-            <select id="modelSelect">
-                </select>
+        <div class="nav-container">
+            <button class="nav-btn" onclick="prevModel()">◀</button>
+            <div id="displayName" class="model-name">STR-A</div>
+            <button class="nav-btn" onclick="nextModel()">▶</button>
         </div>
     </model-viewer>
 
     <script>
         const viewer = document.getElementById('viewer');
-        const selector = document.getElementById('modelSelect');
+        const nameDisplay = document.getElementById('displayName');
+        
+        // 1. Define your Names here! 
+        // Index 1 matches 1.glb, Index 2 matches 2.glb, etc.
+        const modelNames = {
+            1: "STR-A",
+            2: "STR-B",
+            3: "STR-C",
+            4: "STR-D",
+            5: "STR-E",
+            6: "STR-F",
+            7: "STR-G",
+            8: "STR-H",
+            9: "STR-I",
+            10: "STR-J",
+            11: "STR-K"
+        };
+
         const totalModels = 11;
+        let currentId = 1;
 
-        // 1. Setup the dropdown menu
-        for (let i = 1; i <= totalModels; i++) {
-            let opt = document.createElement('option');
-            opt.value = i;
-            opt.innerHTML = 'Model ' + i;
-            selector.appendChild(opt);
+        // 2. Logic to update the viewer
+        function updateUI(id) {
+            currentId = parseInt(id);
+            viewer.src = currentId + '.glb';
+            nameDisplay.innerHTML = modelNames[currentId] || "Model " + currentId;
+            
+            // This updates the URL bar without reloading the page
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?model=' + currentId;
+            window.history.pushState({path:newUrl},'',newUrl);
         }
 
-        // 2. Function to load a specific model
-        function loadModel(num) {
-            if (num > 0 && num <= totalModels) {
-                viewer.src = num + '.glb';
-                selector.value = num;
-            }
+        function nextModel() {
+            let next = currentId + 1;
+            if (next > totalModels) next = 1; // Loop back to start
+            updateUI(next);
         }
 
-        // 3. Logic: Check the URL for "?model=X"
+        function prevModel() {
+            let prev = currentId - 1;
+            if (prev < 1) prev = totalModels; // Loop to end
+            updateUI(prev);
+        }
+
+        // 3. Initial Load logic (checking the URL ?model=X)
         const urlParams = new URLSearchParams(window.location.search);
-        const modelId = urlParams.get('model');
-        if (modelId) {
-            loadModel(modelId);
-        }
+        const startId = urlParams.get('model') || 1;
+        updateUI(startId);
 
-        // 4. Manual switch via dropdown
-        selector.addEventListener('change', (e) => {
-            loadModel(e.target.value);
-        });
     </script>
 </body>
 </html>
